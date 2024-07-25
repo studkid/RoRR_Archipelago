@@ -43,6 +43,7 @@ local teleFrags = 0
 -- 
 local initialSetup = true
 local pickupStep = 0
+local canStep = true
 
 --------------------------------------------------
 -- AP Client                                    --
@@ -279,9 +280,9 @@ gm.post_script_hook(gm.constants.init_player, function(self)
     end
 end)
 
--- Item Send
+-- Location Checks
 gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
-    if ap then
+    if ap and canStep then
         local actor = args[1].value
         if actor.object_index == gm.constants.oP then
             local map = nil
@@ -310,6 +311,7 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
                     pickupStep = pickupStep + 1
                 end
             end
+            print("Pickup Step: " .. pickupStep)
         end
     end
 end)
@@ -369,9 +371,9 @@ function giveItem(item, player)
             itemSent = class_item[itemId + 1]
         until itemSent[7] == rarity and (itemSent[11] == nil or gm.achievement_is_unlocked(itemSent[11]))
 
+        canStep = false
         gm.item_give(player, itemId, 1)
-
-        -- table.insert(itemQueue, itemSent[2])
+        canStep = true
     end
 end
 
