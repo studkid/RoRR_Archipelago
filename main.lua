@@ -221,6 +221,43 @@ function connect(server, slot, password)
 end
 
 --------------------------------------------------
+-- Callback                                     --
+--------------------------------------------------
+
+-- get callback names and ids
+local callback_names = gm.variable_global_get("callback_names")
+local callback_ids =  {}
+callback_array = {}
+
+for i = 1, #callback_names do
+    callback_ids[callback_names[i]] = i - 1
+end
+
+-- callback calling
+gm.post_script_hook(gm.constants.callback_execute, function(self, other, result, args)
+    if callback_array[args[1].value] then
+        -- run every function associated with that callback with context (self, other, result,args)
+        for _, fn in ipairs(callback_array[args[1].value]) do
+            log.info(fn)
+            fn(self, other, result, args)
+        end
+    end
+end)
+
+function add_callback(callback_name, unique_identifier, func, replace)
+    log.info("Callback Adding: " .. unique_identifier)
+    local callback_id = callback_ids[callback_name]
+    log.info(callback_id)
+    if callback_array[callback_id] == nil then
+        callback_array[callback_id] = {}
+    end
+    if replace or callback_array[callback_id][unique_identifier] == nil then
+        log.info("Test")
+        callback_array[callback_id][unique_identifier] = func
+    end
+end
+
+--------------------------------------------------
 -- Main                                         --
 --------------------------------------------------
 
@@ -251,6 +288,8 @@ end)
 
 -- Game Loop
 gm.pre_script_hook(gm.constants.__input_system_tick, function()
+    -- player = getPlayer()
+    -- log.info(player.x .. " " .. player.y)
     if ap then
         ap:poll()
 
@@ -269,16 +308,17 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
     end
 end)
 
--- New Run Check
-gm.post_script_hook(gm.constants.init_player, function(self)
-    print("Sending ".. #itemsCollected .. " items")
+-- New Run Check 
+add_callback("onPlayerInit", 1, function(self, other, result, args)
+    log.info(self.x .. " " .. self.y)
     if ap then
+        print("Sending ".. #itemsCollected .. " items")
         for _, item in ipairs(itemsCollected) do
             print("Sending: " .. item.item)
             giveItem(item, self)
         end
     end
-end)
+end, false)
 
 -- Location Checks
 gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
@@ -348,7 +388,11 @@ function giveItem(item, player)
             itemId = gm.irandom_range(0, #class_equipment - 1)
             equipment = class_equipment[itemId + 1]
         until equipment[7] == 3 and (equipment[11] == nil or gm.achievement_is_unlocked(equipment[11]))
-        gm.instance_create_depth(player.x, player.y, 0, equipment[9])
+        if player.x == 0 and player.y == 0 then
+            table.insert(itemsBuffer, item)
+        else
+            gm.instance_create_depth(player.x, player.y, 0, equipment[9])
+        end
     
     -- Fillers
     elseif item.item == 250101 then -- Money
@@ -372,7 +416,8 @@ function giveItem(item, player)
         until itemSent[7] == rarity and (itemSent[11] == nil or gm.achievement_is_unlocked(itemSent[11]))
 
         canStep = false
-        gm.item_give(player, itemId, 1)
+        print("Giving: " .. itemSent[2] .. " Id: " .. itemId)
+        gm.item_give(player.object_index, itemId, 1)
         canStep = true
     end
 end
