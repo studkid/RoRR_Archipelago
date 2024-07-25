@@ -284,7 +284,32 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
     if ap then
         local actor = args[1].value
         if actor.object_index == gm.constants.oP then
-            
+            local map = nil
+
+            if slotData.grouping == 0 and #locationsMissing ~= 0 then
+                locationsChecked = {}
+
+                if pickupStep == pickupStepOverride then
+                    table.insert(locationsChecked, ap.missing_locations[1])
+                    ap:LocationChecks(locationsChecked)
+                    gm.item_take(actor, args[2], 1, args[4])
+                    pickupStep = 0
+                else
+                    pickupStep = pickupStep + 1
+                end
+            elseif map ~= "Risk of Rain" and #mapgroup[map] ~= 0 then
+                locationsChecked = {}
+                -- map = Stage.getCurrentStage():getName()
+    
+                if pickupStepOveride == pickupStep then
+                    table.insert(locationsChecked, table.remove(mapgroup[map]))
+                    ap:LocationChecks(locationsChecked)
+                    gm.item_take(actor, args[2], 1, args[4])
+                    pickupStep = 0
+                else
+                    pickupStep = pickupStep + 1
+                end
+            end
         end
     end
 end)
