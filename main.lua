@@ -46,6 +46,8 @@ local initialSetup = true
 local pickupStep = 0
 local canStep = true
 
+local playerInst = nil
+
 --------------------------------------------------
 -- AP Client                                    --
 --------------------------------------------------
@@ -252,8 +254,6 @@ end)
 
 -- Game Loop
 gm.pre_script_hook(gm.constants.__input_system_tick, function()
-    -- player = getPlayer()
-    -- log.info(player.x .. " " .. player.y)
     if ap then
         ap:poll()
 
@@ -274,7 +274,7 @@ end)
 
 -- New Run Check 
 Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
-    log.info(player.x .. " " .. player.y)
+    playerInst = player
     if ap then
         log.info("Sending ".. #itemsCollected .. " items")
         for _, item in ipairs(itemsCollected) do
@@ -321,10 +321,24 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
 end)
 
 -- Epic Teleporter Logic
--- gm.pre_script_hook(gm.constants.scr_stage, function(self, other, result, args)
---     -- args[1] = 6
---     log.info(args)
--- end)
+Callback.add("onStageStart", "AP_onStageStart", function()
+    if not ap then
+        return
+    end
+
+    for i = 1, #gm.CInstance.instances_active do
+        if teleFrags >= slotData.requiredFrags and gm.CInstance.instances_active[i].object_index == gm.constants.oTeleporter then
+            local epictp = Object.find("ror", "TeleporterEpic")
+            epictp:create(gm.CInstance.instances_active[i].x, gm.CInstance.instances_active[i].y)
+            gm.instance_destroy(gm.CInstance.instances_active[i].object_index)
+
+        else teleFrags <= slotData.requiredFrags and gm.CInstance.instances_active[i].object_index == gm.constants.oTeleporterEpic then
+            local tp = Object.find("ror", "Teleporter")
+            tp:create(gm.CInstance.instances_active[i].x, gm.CInstance.instances_active[i].y)
+            gm.instance_destroy(gm.CInstance.instances_active[i].object_index)
+        end
+    end
+end)
 
 --------------------------------------------------
 -- UI Additons                                  --
