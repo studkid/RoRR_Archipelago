@@ -4,6 +4,7 @@
 	"website_url": "https://github.com/return-of-modding/ReturnOfModding",
 	"description": "Test Mod",
 	"dependencies": [
-		"ReturnOfModding-ReturnOfModding-1.0.0"
+		"ReturnOfModding-ReturnOfModding-1.0.58",
+		"RoRRModdingToolkit-RoRR_Modding_Toolkit-1.2.11"
 	]
 }

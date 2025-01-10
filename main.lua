@@ -1,4 +1,5 @@
 local AP = require("./lua-apclientpp")
+mods["RoRRModdingToolkit-RoRR_Modding_Toolkit"].auto()
 
 -- Connection Info
 local connected = false
@@ -221,43 +222,6 @@ function connect(server, slot, password)
 end
 
 --------------------------------------------------
--- Callback                                     --
---------------------------------------------------
-
--- get callback names and ids
-local callback_names = gm.variable_global_get("callback_names")
-local callback_ids =  {}
-callback_array = {}
-
-for i = 1, #callback_names do
-    callback_ids[callback_names[i]] = i - 1
-end
-
--- callback calling
-gm.post_script_hook(gm.constants.callback_execute, function(self, other, result, args)
-    if callback_array[args[1].value] then
-        -- run every function associated with that callback with context (self, other, result,args)
-        for _, fn in ipairs(callback_array[args[1].value]) do
-            log.info(fn)
-            fn(self, other, result, args)
-        end
-    end
-end)
-
-function add_callback(callback_name, unique_identifier, func, replace)
-    log.info("Callback Adding: " .. unique_identifier)
-    local callback_id = callback_ids[callback_name]
-    log.info(callback_id)
-    if callback_array[callback_id] == nil then
-        callback_array[callback_id] = {}
-    end
-    if replace or callback_array[callback_id][unique_identifier] == nil then
-        log.info("Test")
-        callback_array[callback_id][unique_identifier] = func
-    end
-end
-
---------------------------------------------------
 -- Main                                         --
 --------------------------------------------------
 
@@ -296,7 +260,7 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
         player = getPlayer()
         if next(itemsBuffer) ~= nil and player ~= nil then
             local item = table.remove(itemsBuffer)
-            print("Sending: " .. item.item)
+            log.info("Sending: " .. item.item)
             if item.item ~= 250006 then
                 giveItem(item, player)
                 table.insert(itemsCollected, item)
@@ -309,16 +273,16 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
 end)
 
 -- New Run Check 
-add_callback("onPlayerInit", 1, function(self, other, result, args)
-    log.info(self.x .. " " .. self.y)
+Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
+    log.info(player.x .. " " .. player.y)
     if ap then
-        print("Sending ".. #itemsCollected .. " items")
+        log.info("Sending ".. #itemsCollected .. " items")
         for _, item in ipairs(itemsCollected) do
-            print("Sending: " .. item.item)
-            giveItem(item, self)
+            log.info("Sending: " .. item.item)
+            giveItem(item, player)
         end
     end
-end, false)
+end)
 
 -- Location Checks
 gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
@@ -351,10 +315,26 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
                     pickupStep = pickupStep + 1
                 end
             end
-            print("Pickup Step: " .. pickupStep)
+            log.info("Pickup Step: " .. pickupStep)
         end
     end
 end)
+
+-- Epic Teleporter Logic
+-- gm.pre_script_hook(gm.constants.scr_stage, function(self, other, result, args)
+--     -- args[1] = 6
+--     log.info(args)
+-- end)
+
+--------------------------------------------------
+-- UI Additons                                  --
+--------------------------------------------------
+
+-- add_callback("onPlayerHUDDraw", 1, function(self, other, result, args)
+--     cam = gm.view_get_camera(0)
+--     gm.draw_text(100, 900, "Test")
+--     -- log.info(gm.camera_get_view_height(cam))
+-- end, false)
 
 --------------------------------------------------
 -- Functions                                    --
@@ -416,7 +396,7 @@ function giveItem(item, player)
         until itemSent[7] == rarity and (itemSent[11] == nil or gm.achievement_is_unlocked(itemSent[11]))
 
         canStep = false
-        print("Giving: " .. itemSent[2] .. " Id: " .. itemId)
+        log.info("Giving: " .. itemSent[2] .. " Id: " .. itemId)
         gm.item_give(player.object_index, itemId, 1)
         canStep = true
     end
