@@ -411,7 +411,7 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
     
     while nextStage == nil do 
         stageProg = math.fmod(stageProg, 5) + 1
-        log.info("Stage Prog: " .. stageProg)
+        -- log.info("Stage Prog: " .. stageProg)
 
         if arrayContains(unlockedStages, stageProg) then
             local newProgression = {}
@@ -429,23 +429,14 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
                     local lastMap = nil
                     for i, mapId in ipairs(newProgression) do
                         local map = Stage.wrap(mapId)
-
-                        if lastMap then
-                            log.info("map: " .. map.identifier .. " lastMap: " .. lastMap.identifier)
-                            log.info(#mapGroup[map.identifier] .. ">" .. #mapGroup[lastMap.identifier])
-                            log.info(#mapGroup[map.identifier] > #mapGroup[lastMap.identifier])
-                        end
                         
                         if lastMap == nil then           
                         elseif #mapGroup[map.identifier] > #mapGroup[lastMap.identifier] then
                             nextStage = newProgression[i]
-                            log.info("nextStage: " .. nextStage)
                         elseif #mapGroup[map.identifier] < #mapGroup[lastMap.identifier] then
                             nextStage = newProgression[i - 1]
-                            log.info("nextStage: " .. nextStage)
                         else
                             nextStage = newProgression[math.random(#newProgression)]
-                            log.info("nextStage: " .. nextStage)
                         end
 
                         lastMap = map
@@ -455,8 +446,6 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
                 end
             end
         end
-
-        log.info("nextStage: " .. Stage.wrap(nextStage).identifier)
     end
 
     curMap = Stage.wrap(nextStage).identifier
