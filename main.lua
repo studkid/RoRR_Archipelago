@@ -95,7 +95,9 @@ function connect(server, slot, password)
                     map = "templeOfTheElders"
                 end
 
-                table.insert(mapGroup[map], 1, loc)
+                if arrayContains(mapGroup[map], loc) == nil then
+                    table.insert(mapGroup[map], 1, loc)
+                end
             end
         end
 
