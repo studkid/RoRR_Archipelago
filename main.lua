@@ -33,6 +33,7 @@ local mapGroup = {
 }
 local unlockedMaps = {}
 local unlockedStages = {1, 6}
+local progStage = 1
 local mapOrder = {}
 
 -- AP Data
@@ -272,8 +273,17 @@ gui.add_imgui(function()
     if ImGui.Begin("Tracker") and connected then
         ImGui.Text("Pickup Step: " .. pickupStep .. "/" .. pickupStepOverride)
         
-        for _, stage in ipairs(mapOrder) do
-            for i, mapId in ipairs(stage) do
+        for i, stage in ipairs(mapOrder) do
+            if arrayContains(unlockedStages, i) then
+                ImGui.PushStyleColor(ImGuiCol.Text, 0xFFFFFF20)
+            else
+                ImGui.PushStyleColor(ImGuiCol.Text, 0xEECCCCCC)
+            end
+
+            ImGui.Text("Stage " .. i)
+            ImGui.PopStyleColor()
+
+            for _, mapId in ipairs(stage) do
                 local map = Stage.wrap(mapId).identifier
 
                 if arrayContains(unlockedMaps, map) then
@@ -285,7 +295,10 @@ gui.add_imgui(function()
                 if mapGroup[map] then
                     ImGui.Text(map .. " " .. #mapGroup[map] .. "/" .. slotData.totalLocations)
                     ImGui.PopStyleColor();
+                else
+                    ImGui.Text(map)
                 end
+                ImGui.PopStyleColor()
             end
         end
 
@@ -393,6 +406,7 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
     
     while nextStage == nil do 
         stageProg = math.fmod(stageProg, 5) + 1
+        log.info("Stage Prog: " .. stageProg)
 
         if arrayContains(unlockedStages, stageProg) then
             local newProgression = {}
