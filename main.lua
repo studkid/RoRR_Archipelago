@@ -68,6 +68,7 @@ function connect(server, slot, password)
         connected = false
         skipItemSend = true
         itemsCollected = {}
+
         log.info("Socket disconnected")
     end
 
@@ -269,7 +270,7 @@ gui.add_imgui(function()
     
 
     if ImGui.Begin("Tracker") and connected then
-        ImGui.Text("Pickup Step: " .. pickupStep)
+        ImGui.Text("Pickup Step: " .. pickupStep .. "/" .. pickupStepOverride)
         
         for _, stage in ipairs(mapOrder) do
             for i, mapId in ipairs(stage) do
@@ -281,10 +282,18 @@ gui.add_imgui(function()
                     ImGui.PushStyleColor(ImGuiCol.Text, 0xEECCCCCC)
                 end
 
-                ImGui.Text(map .. " " .. #mapGroup[map] .. "/" .. slotData.totalLocations)
-                ImGui.PopStyleColor();
+                if mapGroup[map] then
+                    ImGui.Text(map .. " " .. #mapGroup[map] .. "/" .. slotData.totalLocations)
+                    ImGui.PopStyleColor();
+                end
             end
         end
+
+        ImGui.End()
+    end
+
+    if ImGui.Begin("Settings") then
+        pickupStepOverride = ImGui.InputInt("Pickup Step", pickupStepOverride)
 
         ImGui.End()
     end
