@@ -285,33 +285,37 @@ gui.add_imgui(function()
     if ImGui.Begin("Tracker") and connected then
         ImGui.Text("Pickup Step: " .. pickupStep .. "/" .. pickupStepOverride)
         ImGui.Text("Teleporter Fragments: " .. teleFrags .. "/" .. slotData.requiredFrags)
-        
-        for i, stage in ipairs(mapOrder) do
-            if arrayContains(unlockedStages, i) then
-                ImGui.PushStyleColor(ImGuiCol.Text, 0xFFFFFF20)
-            else
-                ImGui.PushStyleColor(ImGuiCol.Text, 0xEECCCCCC)
-            end
 
-            ImGui.Text("Stage " .. i)
-            ImGui.PopStyleColor()
-
-            for _, mapId in ipairs(stage) do
-                local map = Stage.wrap(mapId).identifier
-
-                if arrayContains(unlockedMaps, map) then
+        if slotData.grouping == 0 then
+            ImGui.Text(map .. " " .. #ap.missing_locations .. "/" .. slotData.totalLocations)
+        else
+            for i, stage in ipairs(mapOrder) do
+                if arrayContains(unlockedStages, i) then
                     ImGui.PushStyleColor(ImGuiCol.Text, 0xFFFFFF20)
                 else
                     ImGui.PushStyleColor(ImGuiCol.Text, 0xEECCCCCC)
                 end
 
-                if mapGroup[map] then
-                    ImGui.Text(map .. " " .. #mapGroup[map] .. "/" .. slotData.totalLocations)
-                    ImGui.PopStyleColor();
-                else
-                    ImGui.Text(map)
-                end
+                ImGui.Text("Stage " .. i)
                 ImGui.PopStyleColor()
+
+                for _, mapId in ipairs(stage) do
+                    local map = Stage.wrap(mapId).identifier
+
+                    if arrayContains(unlockedMaps, map) then
+                        ImGui.PushStyleColor(ImGuiCol.Text, 0xFFFFFF20)
+                    else
+                        ImGui.PushStyleColor(ImGuiCol.Text, 0xEECCCCCC)
+                    end
+
+                    if mapGroup[map] then
+                        ImGui.Text(map .. " " .. #mapGroup[map] .. "/" .. slotData.totalLocations)
+                        ImGui.PopStyleColor();
+                    else
+                        ImGui.Text(map)
+                    end
+                    ImGui.PopStyleColor()
+                end
             end
         end
 
