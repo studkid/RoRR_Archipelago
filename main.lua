@@ -32,7 +32,8 @@ local mapGroup = {
     ["Hive Cluster"] =            {},
     ["Temple of the Elders"] =    {}
 }
-local stageGroup = {0, 0, 0, 0, 0}
+local unlockedMaps = {}
+local unlockedStages = {1, 6}
 
 -- AP Data
 local slotData = nil
@@ -41,11 +42,11 @@ local pickupStepOverride = -1
 local deathLink = false
 local teleFrags = 0
 
--- 
+-- Game Data
 local initialSetup = true
 local pickupStep = 0
 local canStep = true
-
+local curStage = nil
 local playerInst = nil
 
 --------------------------------------------------
@@ -83,7 +84,7 @@ function connect(server, slot, password)
             locationsMissing = ap.missing_locations
         elseif data.grouping == 2 then
             for _, loc in ipairs(ap.missing_locations) do
-                name = ap:get_locations_name(loc)
+                name = ap:get_location_name(loc, ap:get_game())
                 map = string.match(name, "(.*):")
                 table.insert(mapGroup[map], 1, loc)
             end
@@ -131,10 +132,9 @@ function connect(server, slot, password)
                     refreshOverride()
                 end
             else
-                table.insert(unlockedMaps, ap:get_item_name(item.item))
-                if runStarted == true then
-                    refreshOverride()
-                end
+                local stageItem = ap:get_item_name(item.item):gsub("%s", ""):gsub("^%u", string.lower)
+                log.info(stageItem)
+                table.insert(unlockedMaps, stageItem)
             end
         end
 
@@ -284,6 +284,10 @@ Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
     end
 end)
 
+Callback.add("onGameStart", "AP_onGameStart", function()
+    curStage = 1
+end)
+
 -- Location Checks
 gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
     if ap and canStep then
@@ -321,24 +325,70 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
 end)
 
 -- Epic Teleporter Logic
-Callback.add("onStageStart", "AP_onStageStart", function()
-    if not ap then
-        return
-    end
+gm.post_script_hook(gm.constants.stage_should_spawn_epic_teleporter, function(self, other, result, args)
+    if not ap then return end
 
-    for i = 1, #gm.CInstance.instances_active do
-        if teleFrags >= slotData.requiredFrags and gm.CInstance.instances_active[i].object_index == gm.constants.oTeleporter then
-            local epictp = Object.find("ror", "TeleporterEpic")
-            epictp:create(gm.CInstance.instances_active[i].x, gm.CInstance.instances_active[i].y)
-            gm.instance_destroy(gm.CInstance.instances_active[i].object_index)
-
-        else teleFrags <= slotData.requiredFrags and gm.CInstance.instances_active[i].object_index == gm.constants.oTeleporterEpic then
-            local tp = Object.find("ror", "Teleporter")
-            tp:create(gm.CInstance.instances_active[i].x, gm.CInstance.instances_active[i].y)
-            gm.instance_destroy(gm.CInstance.instances_active[i].object_index)
-        end
-    end
+    result.value = canEnterFinalStage()
 end)
+
+local stageOrder = Array.wrap(gm.variable_global_get("stage_progression_order"))
+
+for a, i in ipairs(stageOrder) do
+    for n, s in ipairs(List.wrap(i)) do
+        log.info(Stage.wrap(s).identifier)
+    end
+end
+
+-- Stage Locking
+__post_initialize = function()
+
+
+    gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, args)
+        local nextStage = nil
+
+        while nextStage == nil do 
+
+        end
+    end)
+end
+
+-- Skips current stage to next unlocked stage
+-- function skipStage(stageProg)
+--     local nextProg = math.fmod(stageProg, 5) + 1
+
+--     while arrayContains(unlockedStages, nextProg) == nil do
+--         nextProg = math.fmod(nextProg, 5) + 1
+--     end
+
+--     local stageTab = Stage.progression[nextProg]
+--     return getStagesUnlocked(stageTab:toTable(), stageProg)
+-- end
+
+-- Checks if stages are unlocked for the given progression level
+-- function getStagesUnlocked(progression, stageProg)
+--     local newProgression = {}
+--     for _, map in ipairs(progression) do
+--         if arrayContains(unlockedMaps, map:getName()) ~= nil then
+--             table.insert(newProgression, map)
+--         end
+--     end
+
+--     if #newProgression == 0 then
+--         if slotData.strictStageProg == 0 then
+--             local nextProg = math.fmod(stageProg, 5) + 1
+
+--             while arrayContains(unlockedStages, nextProg) == nil do
+--                 nextProg = math.fmod(nextProg, 5) + 1
+--             end
+
+--             newProgression = getStagesUnlocked(Stage.progression[nextProg]:toTable(), nextProg)
+--         else
+--             newProgression = getStagesUnlocked(Stage.progression[1]:toTable(), stageProg)
+--         end
+--     end
+
+--     return newProgression
+-- end
 
 --------------------------------------------------
 -- UI Additons                                  --
@@ -414,6 +464,10 @@ function giveItem(item, player)
         gm.item_give(player.object_index, itemId, 1)
         canStep = true
     end
+end
+
+function canEnterFinalStage()
+    return slotData.requiredFrags <= teleFrags and (slotData.grouping == 0 or arrayContains(unlockedMaps, "riskOfRain") ~= nil) and (slotData.stageFiveTp == 0 or curStage == 5)
 end
 
 -- Find Player
