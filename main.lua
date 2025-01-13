@@ -53,6 +53,7 @@ local canStep = true
 local stageProg = 1
 local curMap = nil
 local playerInst = nil
+local gameStarted = false
 
 --------------------------------------------------
 -- AP Client                                    --
@@ -269,6 +270,8 @@ gui.add_imgui(function()
             else
                 ap = nil
                 connected = false
+                itemsCollected = {}
+                skipItemSend = true
             end
         end
         ImGui.End()
@@ -363,6 +366,11 @@ end)
 
 Callback.add("onGameStart", "AP_onGameStart", function()
     stageProg = 0
+    gameStarted = true
+end)
+
+Callback.add("onGameEnd", "AP_onGameEnd", function()
+    gameStarted = false
 end)
 
 -- Location Checks
