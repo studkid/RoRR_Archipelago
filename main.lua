@@ -41,6 +41,7 @@ local slotData = nil
 local curPlayerSlot = nil
 local pickupStepOverride = -1
 local deathLink = false
+local warpToMostChecks = false
 local teleFrags = 0
 local expBuffer = 0
 
@@ -173,7 +174,7 @@ function connect(server, slot, password)
 
     function on_location_checked(locations)
         log.info("Locations checked:" .. table.concat(locations, ", "))
-        log.info("Checked locations: " .. table.concat(ap.checked_locations, ", "))
+        -- log.info("Checked locations: " .. table.concat(ap.checked_locations, ", "))
     end
 
     function on_data_package_changed(data_package)
@@ -311,6 +312,7 @@ gui.add_imgui(function()
 
     if ImGui.Begin("Settings") then
         pickupStepOverride = ImGui.InputInt("Pickup Step", pickupStepOverride)
+        warpToMostChecks = ImGui.Checkbox("Always pick stage with most checks remaining", warpToMostChecks)
 
         ImGui.End()
     end
@@ -364,7 +366,6 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
         local actor = args[1].value
         if actor.object_index == gm.constants.oP then
             log.info(curMap)
-            log.info(mapGroup[curMap])
 
             if slotData.grouping == 0 and #locationsMissing ~= 0 then
                 locationsChecked = {}
@@ -377,7 +378,7 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
                 else
                     pickupStep = pickupStep + 1
                 end
-            elseif curMap ~= "Risk of Rain" and #mapGroup[curMap] ~= 0 then
+            elseif curMap ~= "riskOfRain" and #mapGroup[curMap] ~= 0 then
                 locationsChecked = {}
                 map = curMap
                 log.info(pickupStepOverride)
@@ -422,22 +423,54 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
             end
         
             if #newProgression > 0 then
-                nextStage = newProgression[math.random(#newProgression)]
+                if #newProgression == 1 then 
+                    nextStage = newProgression[1]
+                elseif warpToMostChecks then
+                    local lastMap = nil
+                    for i, mapId in ipairs(newProgression) do
+                        local map = Stage.wrap(mapId)
+
+                        if lastMap then
+                            log.info("map: " .. map.identifier .. " lastMap: " .. lastMap.identifier)
+                            log.info(#mapGroup[map.identifier] .. ">" .. #mapGroup[lastMap.identifier])
+                            log.info(#mapGroup[map.identifier] > #mapGroup[lastMap.identifier])
+                        end
+                        
+                        if lastMap == nil then           
+                        elseif #mapGroup[map.identifier] > #mapGroup[lastMap.identifier] then
+                            nextStage = newProgression[i]
+                            log.info("nextStage: " .. nextStage)
+                        elseif #mapGroup[map.identifier] < #mapGroup[lastMap.identifier] then
+                            nextStage = newProgression[i - 1]
+                            log.info("nextStage: " .. nextStage)
+                        else
+                            nextStage = newProgression[math.random(#newProgression)]
+                            log.info("nextStage: " .. nextStage)
+                        end
+
+                        lastMap = map
+                    end
+                else
+                    nextStage = newProgression[math.random(#newProgression)]
+                end
             end
         end
+
+        log.info("nextStage: " .. Stage.wrap(nextStage).identifier)
     end
 
     curMap = Stage.wrap(nextStage).identifier
+    log.info(curMap)
     result.value = nextStage
 end)
 
 -- Game Win Check
--- gm.post_script_hook(gm.constants.ending_get_id, function(self, other, result, args)
---     local ending = Ending.wrap(args[1])
---     if ending.is_victory() then
---         log.info("win")
---     end
--- end)
+gm.post_script_hook(gm.constants.ending_find, function(self, other, result, args)
+    log.info(args[1].value)
+    if args[1].value == "ror-win" then
+        ap:StatusUpdate(30)
+    end
+end)
 
 --------------------------------------------------
 -- UI Additons                                  --
