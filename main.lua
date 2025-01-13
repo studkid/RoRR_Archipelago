@@ -324,7 +324,7 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
         player = getPlayer()
         if next(itemsBuffer) ~= nil and player ~= nil then
             local item = table.remove(itemsBuffer)
-            log.info("Sending: " .. item.item)
+            -- log.info("Sending: " .. item.item)
             if item.item ~= 250006 then
                 giveItem(item, player)
                 table.insert(itemsCollected, item)
@@ -348,7 +348,7 @@ Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
     if ap then
         log.info("Sending ".. #itemsCollected .. " items")
         for _, item in ipairs(itemsCollected) do
-            log.info("Sending: " .. item.item)
+            -- log.info("Sending: " .. item.item)
             giveItem(item, player)
         end
     end
@@ -405,7 +405,7 @@ end)
 
 -- Stage Locking
 gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, args)
-    if slotData.grouping == 0 and ap then return end
+    if not ap or slotData.grouping == 0 then return end
     local nextStage = nil
     
     while nextStage == nil do 
@@ -430,6 +430,14 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
     curMap = Stage.wrap(nextStage).identifier
     result.value = nextStage
 end)
+
+-- Game Win Check
+-- gm.post_script_hook(gm.constants.ending_get_id, function(self, other, result, args)
+--     local ending = Ending.wrap(args[1])
+--     if ending.is_victory() then
+--         log.info("win")
+--     end
+-- end)
 
 --------------------------------------------------
 -- UI Additons                                  --
@@ -491,9 +499,12 @@ function giveItem(item, player)
     
     -- Fillers
     elseif item.item == 250101 then -- Money
+        local director = gm._mod_game_getDirector()
         gm.item_drop_object(gm.constants.oEfGold, player.x, player.y, 0, false)
-        local goldObj = Helper.find_active_instance(gm.constants.oEfGold)
-        goldObj.value = goldObj.value + (100 * gm.constants.cost_get_base_gold_price_scale)
+        local goldObj = gm.instance_find(gm.constants.oEfGold, 0)
+        -- local goldObj = Object.wrap(gm.constants.oEfGold):create(player.x, player.y):get_data()
+        log.info(goldObj.value)
+        goldObj.value = 100 * director.enemy_buff
     elseif item.item == 250102 then -- Experience
         expBuffer = expBuffer + 1000
 
@@ -513,7 +524,7 @@ function giveItem(item, player)
         until itemSent[7] == rarity and (itemSent[11] == nil or gm.achievement_is_unlocked(itemSent[11]))
 
         canStep = false
-        log.info("Giving: " .. itemSent[2] .. " Id: " .. itemId)
+        -- log.info("Giving: " .. itemSent[2] .. " Id: " .. itemId)
         gm.item_give(player.object_index, itemId, 1)
         canStep = true
     end
