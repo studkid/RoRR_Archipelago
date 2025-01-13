@@ -17,6 +17,7 @@ local ap = nil
 
 -- Item and Location Handling
 local itemsCollected = {}
+local skipItemCollectedAdd = false
 local itemsBuffer = {}
 local locationsMissing = {}
 local skipItemSend = false
@@ -329,7 +330,11 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
             -- log.info("Sending: " .. item.item)
             if item.item ~= 250006 then
                 giveItem(item, player)
-                table.insert(itemsCollected, item)
+                if skipItemCollectedAdd then
+                    skipItemCollectedAdd = false
+                else
+                    table.insert(itemsCollected, item)
+                end
             else
                 teleFrags = teleFrags + 1
                 table.insert(itemQueue, "Teleporter Fragment")
@@ -449,7 +454,7 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
     end
 
     curMap = Stage.wrap(nextStage).identifier
-    log.info(curMap)
+    -- log.info(curMap)
     result.value = nextStage
 end)
 
@@ -515,6 +520,7 @@ function giveItem(item, player)
         until equipment[7] == 3 and (equipment[11] == nil or gm.achievement_is_unlocked(equipment[11]))
         if player.x == 0 and player.y == 0 then
             table.insert(itemsBuffer, item)
+            skipItemCollectedAdd = true
         else
             gm.instance_create_depth(player.x, player.y, 0, equipment[9])
         end
@@ -524,8 +530,6 @@ function giveItem(item, player)
         local director = gm._mod_game_getDirector()
         gm.item_drop_object(gm.constants.oEfGold, player.x, player.y, 0, false)
         local goldObj = gm.instance_find(gm.constants.oEfGold, 0)
-        -- local goldObj = Object.wrap(gm.constants.oEfGold):create(player.x, player.y):get_data()
-        log.info(goldObj.value)
         goldObj.value = 100 * director.enemy_buff
     elseif item.item == 250102 then -- Experience
         expBuffer = expBuffer + 1000
