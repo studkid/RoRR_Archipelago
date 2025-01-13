@@ -47,6 +47,7 @@ local initialSetup = true
 local pickupStep = 0
 local canStep = true
 local stageProg = 1
+local curMap = nil
 local playerInst = nil
 
 --------------------------------------------------
@@ -85,7 +86,12 @@ function connect(server, slot, password)
         elseif data.grouping == 2 then
             for _, loc in ipairs(ap.missing_locations) do
                 name = ap:get_location_name(loc, ap:get_game())
-                map = string.match(name, "(.*):")
+                map = string.match(name, "(.*):"):gsub("%s", ""):gsub("^%u", string.lower)
+                
+                if map == "templeoftheElders" then
+                    map = "templeOfTheElders"
+                end
+
                 table.insert(mapGroup[map], 1, loc)
             end
         end
@@ -133,7 +139,6 @@ function connect(server, slot, password)
                 end
             else
                 local stageItem = ap:get_item_name(item.item, ap:get_game()):gsub("%s", ""):gsub("^%u", string.lower)
-                log.info(stageItem)
                 table.insert(unlockedMaps, stageItem)
             end
         end
@@ -285,7 +290,7 @@ Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
 end)
 
 Callback.add("onGameStart", "AP_onGameStart", function()
-    stageProg = 1
+    stageProg = 0
 end)
 
 -- Location Checks
@@ -340,26 +345,29 @@ __post_initialize = function()
     end
 
     gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, args)
-        if slotData.grouping == 0 then return end
+        if slotData.grouping == 0 and ap then return end
         local nextStage = nil
         
         while nextStage == nil do 
-            local nextProg = math.fmod(stageProg, 5) + 1
+            stageProg = math.fmod(stageProg, 5) + 1
 
-            if arrayContains(unlockedStages, nextProg) then
+            if arrayContains(unlockedStages, stageProg) then
                 local newProgression = {}
-                for _, map in ipairs(mapOrder[nextProg]) do
-                    log.info(map.identifier)
+                for _, mapId in ipairs(mapOrder[stageProg]) do
+                    local map = Stage.wrap(mapId)
                     if arrayContains(unlockedMaps, map.identifier) ~= nil then
-                        table.insert(newProgression, map)
+                        table.insert(newProgression, mapId)
                     end
                 end
             
                 if #newProgression > 0 then
-                    nextStage = newProgression[math.random[#newProgression]]
+                    nextStage = newProgression[math.random(#newProgression)]
                 end
             end
         end
+
+        curMap = nextStage
+        result.value = nextStage
     end)
 end
 
@@ -376,6 +384,16 @@ end
 --------------------------------------------------
 -- Functions                                    --
 --------------------------------------------------
+
+-- Checks array for value
+function arrayContains(tab, val)
+    for i, value in ipairs(tab) do
+        if value == val then
+            return i
+        end
+    end
+    return nil
+end
 
 -- Item Handler
 function giveItem(item, player)
@@ -440,7 +458,7 @@ function giveItem(item, player)
 end
 
 function canEnterFinalStage()
-    return slotData.requiredFrags <= teleFrags and (slotData.grouping == 0 or arrayContains(unlockedMaps, "riskOfRain") ~= nil) and (slotData.stageFiveTp == 0 or curStage == 5)
+    return slotData.requiredFrags <= teleFrags and (slotData.grouping == 0 or arrayContains(unlockedMaps, "riskOfRain") ~= nil) and (slotData.stageFiveTp == 0 or stageProg == 5)
 end
 
 -- Find Player
