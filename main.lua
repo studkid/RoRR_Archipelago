@@ -251,9 +251,9 @@ gui.add_imgui(function()
         if connected then
             con = "Disconnect"
         end
-        local address = ImGui.InputText("Server Address", address, 100)
-        local slot = ImGui.InputText("Slot", slot, 100)
-        local password = ImGui.InputText("Password", password, 100)
+        address = ImGui.InputText("Server Address", address, 100)
+        slot = ImGui.InputText("Slot", slot, 100)
+        password = ImGui.InputText("Password", password, 100)
 
         if ImGui.Button(con) then
             if not connected then
@@ -268,17 +268,26 @@ gui.add_imgui(function()
     end
     
 
-    -- if ImGui.Begin("Tracker") and connected then
-    --     ImGui.Text("Pickup Step: " .. pickupStep)
+    if ImGui.Begin("Tracker") and connected then
+        ImGui.Text("Pickup Step: " .. pickupStep)
         
-    --     for _, map, checks in ipairs(mapGroup) do
-    --         if arrayContains
+        for _, stage in ipairs(mapOrder) do
+            for i, mapId in ipairs(stage) do
+                local map = Stage.wrap(mapId).identifier
 
-    --         ImGui.Text(map .. " " .. #checks .. "/" .. slotData.totalLocations)
-    --     end
+                if arrayContains(unlockedMaps, map) then
+                    ImGui.PushStyleColor(ImGuiCol.Text, 0xFFFFFF20)
+                else
+                    ImGui.PushStyleColor(ImGuiCol.Text, 0xEECCCCCC)
+                end
 
-    --     ImGui.End()
-    -- end
+                ImGui.Text(map .. " " .. #mapGroup[map] .. "/" .. slotData.totalLocations)
+                ImGui.PopStyleColor();
+            end
+        end
+
+        ImGui.End()
+    end
 end)
 
 -- Game Loop
