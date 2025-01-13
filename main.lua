@@ -41,6 +41,7 @@ local curPlayerSlot = nil
 local pickupStepOverride = -1
 local deathLink = false
 local teleFrags = 0
+local expBuffer = 0
 
 -- Game Data
 local initialSetup = true
@@ -145,6 +146,11 @@ function connect(server, slot, password)
                 end
             else
                 local stageItem = ap:get_item_name(item.item, ap:get_game()):gsub("%s", ""):gsub("^%u", string.lower)
+
+                if map == "templeoftheElders" then
+                    map = "templeOfTheElders"
+                end
+
                 table.insert(unlockedMaps, stageItem)
             end
         end
@@ -245,9 +251,9 @@ gui.add_imgui(function()
         if connected then
             con = "Disconnect"
         end
-        address = ImGui.InputText("Server Address", address, 100)
-        slot = ImGui.InputText("Slot", slot, 100)
-        password = ImGui.InputText("Password", password, 100)
+        local address = ImGui.InputText("Server Address", address, 100)
+        local slot = ImGui.InputText("Slot", slot, 100)
+        local password = ImGui.InputText("Password", password, 100)
 
         if ImGui.Button(con) then
             if not connected then
@@ -258,9 +264,21 @@ gui.add_imgui(function()
                 connected = false
             end
         end
+        ImGui.End()
     end
- 
-    ImGui.End()
+    
+
+    -- if ImGui.Begin("Tracker") and connected then
+    --     ImGui.Text("Pickup Step: " .. pickupStep)
+        
+    --     for _, map, checks in ipairs(mapGroup) do
+    --         if arrayContains
+
+    --         ImGui.Text(map .. " " .. #checks .. "/" .. slotData.totalLocations)
+    --     end
+
+    --     ImGui.End()
+    -- end
 end)
 
 -- Game Loop
@@ -279,6 +297,12 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
                 teleFrags = teleFrags + 1
                 table.insert(itemQueue, "Teleporter Fragment")
             end
+        end
+
+        if expBuffer > 0 and player ~= nil then
+            local director = gm._mod_game_getDirector()
+            director.player_exp = expBuffer
+            expBuffer = expBuffer - director.player_exp_required
         end
     end
 end)
@@ -433,7 +457,7 @@ function giveItem(item, player)
     elseif item.item == 250101 then -- Money
         
     elseif item.item == 250102 then -- Experience
-        
+        expBuffer = expBuffer + 1000
 
     -- Traps
     elseif item.item == 250201 then -- Time Warp
