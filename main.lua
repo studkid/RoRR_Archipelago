@@ -34,7 +34,7 @@ local mapGroup = {
 }
 local unlockedMaps = {}
 local unlockedStages = {1, 6}
-local progStage = 1
+local progStage = 2
 local mapOrder = {}
 
 -- AP Data
@@ -72,7 +72,6 @@ function connect(server, slot, password)
         connected = false
         skipItemSend = true
         itemsCollected = {}
-        progStage = 1
 
         log.info("Socket disconnected")
     end
@@ -147,6 +146,7 @@ function connect(server, slot, password)
                     table.insert(unlockedStages, 5)
                 elseif item.item == 250306 then
                     table.insert(unlockedStages, progStage)
+                    log.info("progStage: " .. progStage)
                     progStage = progStage + 1
                 end
                 if runStarted == true then
@@ -155,8 +155,11 @@ function connect(server, slot, password)
             else
                 local stageItem = ap:get_item_name(item.item, ap:get_game()):gsub("%s", ""):gsub("^%u", string.lower)
 
-                if map == "templeoftheElders" then
-                    map = "templeOfTheElders"
+                -- Make this better please
+                if stageItem == "templeoftheElders" then
+                    stageItem = "templeOfTheElders"
+                elseif stageItem == "riskofRain" then
+                    stageItem = "riskOfRain"
                 end
 
                 table.insert(unlockedMaps, stageItem)
