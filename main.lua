@@ -103,6 +103,12 @@ function connect(server, slot, password)
         if deathLink == true then
             ap:ConnectUpdate(nil, { "Lua-APClientPP", "DeathLink" })
         end
+
+        -- Fill mapOrder
+        local stageProgOrder = Array.wrap(gm.variable_global_get("stage_progression_order"))
+        for i, maps in ipairs(stageProgOrder) do
+            mapOrder[i] = List.wrap(maps)
+        end
     end
 
 
@@ -235,13 +241,13 @@ end
 -- Connection Screen
 gui.add_imgui(function()
     if ImGui.Begin("Connection") then
-        con = "Connect"
-        if connection then
+        local con = "Connect"
+        if connected then
             con = "Disconnect"
         end
         address = ImGui.InputText("Server Address", address, 100)
-        slot = ImGui.InputText("slot", slot, 100)
-        password = ImGui.InputText("password", password, 100)
+        slot = ImGui.InputText("Slot", slot, 100)
+        password = ImGui.InputText("Password", password, 100)
 
         if ImGui.Button(con) then
             if not connected then
@@ -298,7 +304,8 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
     if ap and canStep then
         local actor = args[1].value
         if actor.object_index == gm.constants.oP then
-            local map = nil
+            log.info(curMap)
+            log.info(mapGroup[curMap])
 
             if slotData.grouping == 0 and #locationsMissing ~= 0 then
                 locationsChecked = {}
@@ -311,12 +318,13 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
                 else
                     pickupStep = pickupStep + 1
                 end
-            elseif map ~= "Risk of Rain" and #mapgroup[map] ~= 0 then
+            elseif curMap ~= "Risk of Rain" and #mapGroup[curMap] ~= 0 then
                 locationsChecked = {}
-                -- map = Stage.getCurrentStage():getName()
+                map = curMap
+                log.info(pickupStepOverride)
     
-                if pickupStepOveride == pickupStep then
-                    table.insert(locationsChecked, table.remove(mapgroup[map]))
+                if pickupStep == pickupStepOverride then
+                    table.insert(locationsChecked, table.remove(mapGroup[curMap]))
                     ap:LocationChecks(locationsChecked)
                     gm.item_take(actor, args[2], 1, args[4])
                     pickupStep = 0
@@ -337,39 +345,31 @@ gm.post_script_hook(gm.constants.stage_should_spawn_epic_teleporter, function(se
 end)
 
 -- Stage Locking
-__post_initialize = function()
-    local stageProgOrder = Array.wrap(gm.variable_global_get("stage_progression_order"))
+gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, args)
+    if slotData.grouping == 0 and ap then return end
+    local nextStage = nil
+    
+    while nextStage == nil do 
+        stageProg = math.fmod(stageProg, 5) + 1
 
-    for i, maps in ipairs(stageProgOrder) do
-        mapOrder[i] = List.wrap(maps)
-    end
-
-    gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, args)
-        if slotData.grouping == 0 and ap then return end
-        local nextStage = nil
-        
-        while nextStage == nil do 
-            stageProg = math.fmod(stageProg, 5) + 1
-
-            if arrayContains(unlockedStages, stageProg) then
-                local newProgression = {}
-                for _, mapId in ipairs(mapOrder[stageProg]) do
-                    local map = Stage.wrap(mapId)
-                    if arrayContains(unlockedMaps, map.identifier) ~= nil then
-                        table.insert(newProgression, mapId)
-                    end
-                end
-            
-                if #newProgression > 0 then
-                    nextStage = newProgression[math.random(#newProgression)]
+        if arrayContains(unlockedStages, stageProg) then
+            local newProgression = {}
+            for _, mapId in ipairs(mapOrder[stageProg]) do
+                local map = Stage.wrap(mapId)
+                if arrayContains(unlockedMaps, map.identifier) ~= nil then
+                    table.insert(newProgression, mapId)
                 end
             end
+        
+            if #newProgression > 0 then
+                nextStage = newProgression[math.random(#newProgression)]
+            end
         end
+    end
 
-        curMap = nextStage
-        result.value = nextStage
-    end)
-end
+    curMap = Stage.wrap(nextStage).identifier
+    result.value = nextStage
+end)
 
 --------------------------------------------------
 -- UI Additons                                  --
