@@ -131,7 +131,7 @@ function connect(server, slot, password)
         -- log.info("Items: ")
 
         for _, item in ipairs(items) do 
-            -- log.info(item.item)
+            log.info(item.item)
             if initialSetup and (item.item == 250202 or item.item == 250203) then
             elseif item.item < 250300 then
                 table.insert(itemsBuffer, 1, item)
@@ -275,6 +275,7 @@ gui.add_imgui(function()
                 connected = false
                 itemsCollected = {}
                 skipItemSend = true
+                unlockedStages = {1, 6}
             end
         end
         ImGui.End()
@@ -333,7 +334,7 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
         player = getPlayer()
         if next(itemsBuffer) ~= nil and player ~= nil then
             local item = table.remove(itemsBuffer)
-            -- log.info("Sending: " .. item.item)
+            log.info("Sending: " .. item.item)
             if item.item ~= 250006 then
                 giveItem(item, player)
                 if skipItemCollectedAdd then
@@ -343,7 +344,7 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
                 end
             else
                 teleFrags = teleFrags + 1
-                table.insert(itemQueue, "Teleporter Fragment")
+                -- table.insert(itemQueue, "Teleporter Fragment")
             end
         end
 
@@ -422,7 +423,12 @@ end)
 
 -- Stage Locking
 gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, args)
-    if not ap or slotData.grouping == 0 then return end
+    local teleInst = Instance.find(Instance.teleporters)
+    if teleInst:exists() then
+        log.info(teleInst.active)
+    end
+
+    if not connected or slotData.grouping == 0 or teleInst.active == 7 then return end
     local nextStage = nil
     
     while nextStage == nil do 
