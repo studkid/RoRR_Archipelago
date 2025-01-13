@@ -69,6 +69,7 @@ function connect(server, slot, password)
         connected = false
         skipItemSend = true
         itemsCollected = {}
+        progStage = 1
 
         log.info("Socket disconnected")
     end
@@ -125,10 +126,10 @@ function connect(server, slot, password)
         if(skipItemSend) then
             return
         end
-        log.info("Items: ")
+        -- log.info("Items: ")
 
         for _, item in ipairs(items) do 
-            log.info(item.item)
+            -- log.info(item.item)
             if initialSetup and (item.item == 250202 or item.item == 250203) then
             elseif item.item < 250300 then
                 table.insert(itemsBuffer, 1, item)
@@ -274,6 +275,7 @@ gui.add_imgui(function()
 
     if ImGui.Begin("Tracker") and connected then
         ImGui.Text("Pickup Step: " .. pickupStep .. "/" .. pickupStepOverride)
+        ImGui.Text("Teleporter Fragments: " .. teleFrags .. "/" .. slotData.requiredFrags)
         
         for i, stage in ipairs(mapOrder) do
             if arrayContains(unlockedStages, i) then
@@ -489,7 +491,9 @@ function giveItem(item, player)
     
     -- Fillers
     elseif item.item == 250101 then -- Money
-        
+        gm.item_drop_object(gm.constants.oEfGold, player.x, player.y, 0, false)
+        local goldObj = Helper.find_active_instance(gm.constants.oEfGold)
+        goldObj.value = goldObj.value + (100 * gm.constants.cost_get_base_gold_price_scale)
     elseif item.item == 250102 then -- Experience
         expBuffer = expBuffer + 1000
 
