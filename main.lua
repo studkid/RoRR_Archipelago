@@ -348,7 +348,7 @@ __post_initialize = function()
 
             if arrayContains(unlockedStages, nextProg) then
                 local newProgression = {}
-                for _, map in ipairs(mapGroup[nextProg]) do
+                for _, map in ipairs(mapOrder[nextProg]) do
                     log.info(map.identifier)
                     if arrayContains(unlockedMaps, map.identifier) ~= nil then
                         table.insert(newProgression, map)
