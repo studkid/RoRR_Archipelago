@@ -460,6 +460,10 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
                 else
                     nextStage = newProgression[math.random(#newProgression)]
                 end
+            else
+                if slotData.strictStageProg == 1 then
+                    stageProg = 1
+                end
             end
         end
     end
