@@ -21,19 +21,19 @@ local itemsBuffer = {}
 local locationsMissing = {}
 local skipItemSend = false
 local mapGroup = {
-    ["Desolate Forest"] =         {},
-    ["Dried Lake"] =              {},
-    ["Damp Caverns"] =            {},
-    ["Sky Meadow"] =              {},
-    ["Ancient Valley"] =          {},
-    ["Sunken Tomb"] =             {},
-    ["Sunken Tombs"] =            {},
-    ["Magma Barracks"] =          {},
-    ["Hive Cluster"] =            {},
-    ["Temple of the Elders"] =    {}
+    ["desolateForest"] =         {},
+    ["driedLake"] =              {},
+    ["dampCaverns"] =            {},
+    ["skyMeadow"] =              {},
+    ["ancientValley"] =          {},
+    ["sunkenTombs"] =            {},
+    ["magmaBarracks"] =          {},
+    ["hiveCluster"] =            {},
+    ["templeOfTheElders"] =      {}
 }
 local unlockedMaps = {}
 local unlockedStages = {1, 6}
+local mapOrder = {}
 
 -- AP Data
 local slotData = nil
@@ -46,7 +46,7 @@ local teleFrags = 0
 local initialSetup = true
 local pickupStep = 0
 local canStep = true
-local curStage = nil
+local stageProg = 1
 local playerInst = nil
 
 --------------------------------------------------
@@ -132,7 +132,7 @@ function connect(server, slot, password)
                     refreshOverride()
                 end
             else
-                local stageItem = ap:get_item_name(item.item):gsub("%s", ""):gsub("^%u", string.lower)
+                local stageItem = ap:get_item_name(item.item, ap:get_game()):gsub("%s", ""):gsub("^%u", string.lower)
                 log.info(stageItem)
                 table.insert(unlockedMaps, stageItem)
             end
@@ -285,7 +285,7 @@ Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
 end)
 
 Callback.add("onGameStart", "AP_onGameStart", function()
-    curStage = 1
+    stageProg = 1
 end)
 
 -- Location Checks
@@ -331,64 +331,37 @@ gm.post_script_hook(gm.constants.stage_should_spawn_epic_teleporter, function(se
     result.value = canEnterFinalStage()
 end)
 
-local stageOrder = Array.wrap(gm.variable_global_get("stage_progression_order"))
-
-for a, i in ipairs(stageOrder) do
-    for n, s in ipairs(List.wrap(i)) do
-        log.info(Stage.wrap(s).identifier)
-    end
-end
-
 -- Stage Locking
 __post_initialize = function()
+    local stageProgOrder = Array.wrap(gm.variable_global_get("stage_progression_order"))
 
+    for i, maps in ipairs(stageProgOrder) do
+        mapOrder[i] = List.wrap(maps)
+    end
 
     gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, args)
+        if slotData.grouping == 0 then return end
         local nextStage = nil
-
+        
         while nextStage == nil do 
+            local nextProg = math.fmod(stageProg, 5) + 1
 
+            if arrayContains(unlockedStages, nextProg) then
+                local newProgression = {}
+                for _, map in ipairs(mapGroup[nextProg]) do
+                    log.info(map.identifier)
+                    if arrayContains(unlockedMaps, map.identifier) ~= nil then
+                        table.insert(newProgression, map)
+                    end
+                end
+            
+                if #newProgression > 0 then
+                    nextStage = newProgression[math.random[#newProgression]]
+                end
+            end
         end
     end)
 end
-
--- Skips current stage to next unlocked stage
--- function skipStage(stageProg)
---     local nextProg = math.fmod(stageProg, 5) + 1
-
---     while arrayContains(unlockedStages, nextProg) == nil do
---         nextProg = math.fmod(nextProg, 5) + 1
---     end
-
---     local stageTab = Stage.progression[nextProg]
---     return getStagesUnlocked(stageTab:toTable(), stageProg)
--- end
-
--- Checks if stages are unlocked for the given progression level
--- function getStagesUnlocked(progression, stageProg)
---     local newProgression = {}
---     for _, map in ipairs(progression) do
---         if arrayContains(unlockedMaps, map:getName()) ~= nil then
---             table.insert(newProgression, map)
---         end
---     end
-
---     if #newProgression == 0 then
---         if slotData.strictStageProg == 0 then
---             local nextProg = math.fmod(stageProg, 5) + 1
-
---             while arrayContains(unlockedStages, nextProg) == nil do
---                 nextProg = math.fmod(nextProg, 5) + 1
---             end
-
---             newProgression = getStagesUnlocked(Stage.progression[nextProg]:toTable(), nextProg)
---         else
---             newProgression = getStagesUnlocked(Stage.progression[1]:toTable(), stageProg)
---         end
---     end
-
---     return newProgression
--- end
 
 --------------------------------------------------
 -- UI Additons                                  --
