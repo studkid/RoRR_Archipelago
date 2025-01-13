@@ -433,7 +433,7 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
     
     while nextStage == nil do 
         stageProg = math.fmod(stageProg, 5) + 1
-        -- log.info("Stage Prog: " .. stageProg)
+        log.info("Stage Prog: " .. stageProg)
 
         if arrayContains(unlockedStages, stageProg) then
             local newProgression = {}
@@ -445,6 +445,7 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
             end
         
             if #newProgression > 0 then
+                log.info(Stage.wrap(newProgression[1]).identifier)
                 if #newProgression == 1 then 
                     nextStage = newProgression[1]
                 elseif warpToMostChecks then
@@ -468,10 +469,11 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
                 end
             else
                 if slotData.strictStageProg == 1 then
-                    stageProg = 1
+                    stageProg = 0
                 end
             end
         end
+        log.info(nextStage)
     end
 
     curMap = Stage.wrap(nextStage).identifier
@@ -482,7 +484,7 @@ end)
 -- Game Win Check
 gm.post_script_hook(gm.constants.ending_find, function(self, other, result, args)
     log.info(args[1].value)
-    if args[1].value == "ror-win" then
+    if ap and args[1].value == "ror-won" then
         ap:StatusUpdate(30)
     end
 end)
