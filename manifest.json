@@ -1,8 +1,8 @@
 ﻿{
-	"name": "RoRR_Archipelago",
-	"version_number": "1.0.0",
-	"website_url": "https://github.com/return-of-modding/ReturnOfModding",
-	"description": "Test Mod",
+	"name": "Archipelago",
+	"version_number": "0.1.0",
+	"website_url": "https://github.com/studkid/RoRR_Archipelago/tree/main",
+	"description": "Archipelago support for RoRR",
 	"dependencies": [
 		"ReturnOfModding-ReturnOfModding-1.0.58",
 		"RoRRModdingToolkit-RoRR_Modding_Toolkit-1.2.11"
