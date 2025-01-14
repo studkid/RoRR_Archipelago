@@ -41,7 +41,7 @@ Not currently, but is planned once a bit more polish is done.
 This is currently untested, however most item and survivor mods.  Stage mods *probably* work fine with universal grouping mode, otherwise at best they'll just be ignored.
 
 # Archipelago YAML Settings
-Currently this implementation works off of the Risk of Rain 1 apworld you can download from it's [Github](https://github.com/studkid/RoR_Archipelago/releases).
+Currently this implementation works off of the Risk of Rain 1 apworld you can download from its [Github](https://github.com/studkid/RoR_Archipelago/releases).
 Traps are not currently implemented yet so it's recommended to turn them off.
 
 # How to connect to an Archipelago Server
@@ -53,4 +53,4 @@ Currently there is not any ingame UI to relay server information, it's recommend
 
 # Known issues
 - Temporary items (notably ones created by drifter) are counted as an item check
-- Disconnecting and reconnecting can cause the tracker to display more checks then are actually there.  Also leads to the game removing items in an attempt to send already checked locations out.
+- Disconnecting and reconnecting can cause the tracker to display more checks than are actually there.  Also leads to the game removing items in an attempt to send already checked locations out.
