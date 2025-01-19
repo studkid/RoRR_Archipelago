@@ -45,6 +45,7 @@ local deathLink = false
 local warpToMostChecks = false
 local teleFrags = 0
 local expBuffer = 0
+local maxEquip = 0
 
 -- Game Data
 local initialSetup = true
@@ -325,6 +326,7 @@ gui.add_imgui(function()
     if ImGui.Begin("Settings") then
         pickupStepOverride = ImGui.InputInt("Pickup Step", pickupStepOverride)
         warpToMostChecks = ImGui.Checkbox("Always pick stage with most checks remaining", warpToMostChecks)
+        maxEquip = ImGui.InputInt("Maximum Equipment on Run Start", maxEquip)
 
         ImGui.End()
     end
@@ -365,9 +367,17 @@ Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
     playerInst = player
     if ap then
         log.info("Sending ".. #itemsCollected .. " items")
+        
+        equipCount = 0
         for _, item in ipairs(itemsCollected) do
             -- log.info("Sending: " .. item.item)
-            giveItem(item, player)
+            if item.item == 250005 then
+                equipCount = equipCount + 1
+            end
+
+            if item.item ~= 250005 and equipCount < maxEquip then
+                giveItem(item, player)
+            end
         end
     end
 end)
