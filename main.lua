@@ -51,6 +51,7 @@ local teleFrags = 0
 local expBuffer = 0
 local maxEquip = 100
 local bounceMsg = nil
+local instanceID = os.time()
 
 -- Game Data
 local initialSetup = true
