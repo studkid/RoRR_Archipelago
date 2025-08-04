@@ -62,6 +62,7 @@ local curMap = nil
 local playerInst = nil
 local gameStarted = false
 local deathLinkRec = false
+local lastGoldAmt = 0
 
 --------------------------------------------------
 -- AP Client                                    --
@@ -156,9 +157,6 @@ function connect(server, slot, password)
                     log.info("progStage: " .. progStage)
                     progStage = progStage + 1
                 end
-                if runStarted == true then
-                    refreshOverride()
-                end
             else
                 local stageItem = ap:get_item_name(item.item, ap:get_game()):gsub("%s", ""):gsub("^%u", string.lower)
 
@@ -207,11 +205,6 @@ function connect(server, slot, password)
     end
 
     function on_bounced(bounce)
-        if debug then
-            log.info("Bounced:")
-            log.info(bounce)
-        end
-
         bounceMsg = bounce
     end
 
@@ -399,7 +392,7 @@ Callback.add("onPlayerDeath", "AP_deathCheck", function(player)
         cause = slot .. deathMessages[math.random(#deathMessages)],
         source = instanceID,
     }, nil, nil, {"DeathLink"})
-)
+end)
 
 -- onPlayerStep
 Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
@@ -420,7 +413,6 @@ Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
         else
             goldDiff = curGoldAmt - lastGoldAmt
             -- print("lastGoldAmt: " .. lastGoldAmt .. " curGoldAmt " .. curGoldAmt .. " goldDiff " .. goldDiff)
-            lastGoldRem = goldDiff / 10 % 1
             lastGoldAmt = curGoldAmt
         end
 
@@ -428,22 +420,30 @@ Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
             tag = "HardRingLink"
         end
 
-        if goldDiff ~= 0 then
+        if goldDiff ~= 0 and (tag ~= "HardRingLink" or hardRingLink) then
+            log.info(goldDiff .. " " .. tag)
             ap:Bounce({
                 time = os.time(),
                 source = instanceID,
-                amount = math.ceil(goldDiff / Difficulty.getScaling(cost))
+                amount = math.ceil(goldDiff / director.enemy_buff)
             }, nil, nil, {tag})
         end
     end
 
-    -- DeathLink
+    -- Bounce Handler
     if bounceMsg then
         local tag = bounceMsg["tags"]
+        if debug then 
+            log.info("data = {")
+            for index, data in ipairs(bounceMsg["data"]) do
+                log.info(index .. " = " .. data)
+            end
+            log.info("  }") 
+        end
         if tag ~= nil then
-            if arrayContains(bounceMsg["tags"], "DeathLink") then
+            if arrayContains(tag, "DeathLink") then
                 handleDeathLink(bounceMsg, player)
-            elseif arrayContains(bounceMsg["tags"], "RingLink") or arrayContains(bounceMsg["tags"], "HardRingLink") then
+            elseif arrayContains(tag, "RingLink") or arrayContains(tag, "HardRingLink") then
                 handleRingLink(bounceMsg, player)
             end
         end
@@ -453,6 +453,7 @@ end)
 
 -- New Run Check 
 Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
+    runStarted = true
     playerInst = player
     if ap then
         log.info("Sending ".. #itemsCollected .. " items")
@@ -717,13 +718,13 @@ end
 function handleRingLink(msg)
     local amount = msg["data"]["amount"]
     local source = msg["data"]["source"]
-    if debug then print(source .. " sending " .. amount .. " gold to " .. slot) end
+    if debug then log.info(source .. " sending " .. amount .. " gold") end
 
     if source ~= instanceID and ringLink then
         local director = gm._mod_game_getDirector()
         local ohud = gm._mod_game_getHUD()
         newGoldAmt = math.max(ohud.gold + (amount * director.enemy_buff), 0)
-        if debug then print(newGoldAmt) end
+        if debug then log.info(newGoldAmt) end
         lastGoldAmt = newGoldAmt
         ohud.gold = newGoldAmt
     end
@@ -732,22 +733,23 @@ end
 function getApTags()
     local tags = { "Lua-APClientPP" }
 
-        if deathLink == true then
-            table.insert(tags, "DeathLink")
-        end
-
-        if ringLink then
-            table.insert(tags, "RingLink")
-        end
-
-        if hardRingLink then
-            table.insert(tags, "HardRingLink")
-        end
+    if deathLink == true then
+        table.insert(tags, "DeathLink")
     end
+
+    if ringLink then
+        table.insert(tags, "RingLink")
+    end
+
+    if hardRingLink then
+        table.insert(tags, "HardRingLink")
+    end
+
+    return tags
 end
 
 function resetMapArray()
-    for _, i in mapGroup do
+    for _, i in ipairs(mapGroup) do
         i = {}
     end
 end
