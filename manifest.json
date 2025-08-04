@@ -1,10 +1,10 @@
 ﻿{
 	"name": "Archipelago",
-	"version_number": "0.1.0",
+	"version_number": "0.2.0",
 	"website_url": "https://github.com/studkid/RoRR_Archipelago/tree/main",
 	"description": "Archipelago support for RoRR",
 	"dependencies": [
-		"ReturnOfModding-ReturnOfModding-1.0.58",
-		"RoRRModdingToolkit-RoRR_Modding_Toolkit-1.2.11"
+		"ReturnOfModding-ReturnOfModding-1.0.74",
+		"RoRRModdingToolkit-RoRR_Modding_Toolkit-1.2.19"
 	]
 }

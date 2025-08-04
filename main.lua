@@ -1,3 +1,4 @@
+require("staticvars")
 local AP = require("./lua-apclientpp")
 mods["RoRRModdingToolkit-RoRR_Modding_Toolkit"].auto()
 
@@ -42,10 +43,14 @@ local slotData = nil
 local curPlayerSlot = nil
 local pickupStepOverride = -1
 local deathLink = false
+local ringLink = false
+local hardRingLink = false
+local lastRingTime = 0
 local warpToMostChecks = false
 local teleFrags = 0
 local expBuffer = 0
-local maxEquip = 0
+local maxEquip = 100
+local bounceMsg = nil
 
 -- Game Data
 local initialSetup = true
@@ -55,6 +60,7 @@ local stageProg = 1
 local curMap = nil
 local playerInst = nil
 local gameStarted = false
+local deathLinkRec = false
 
 --------------------------------------------------
 -- AP Client                                    --
@@ -109,9 +115,7 @@ function connect(server, slot, password)
             pickupStepOverride = data.itemPickupStep
         end
 
-        if deathLink == true then
-            ap:ConnectUpdate(nil, { "Lua-APClientPP", "DeathLink" })
-        end
+        ap:ConnectUpdate(nil, getApTags())
 
         -- Fill mapOrder
         local stageProgOrder = Array.wrap(gm.variable_global_get("stage_progression_order"))
@@ -201,8 +205,12 @@ function connect(server, slot, password)
     end
 
     function on_bounced(bounce)
-        log.info("Bounced:")
-        log.info(bounce)
+        if debug then
+            log.info("Bounced:")
+            log.info(bounce)
+        end
+
+        bounceMsg = bounce
     end
 
     function on_retrieved(map, keys, extra)
@@ -277,6 +285,7 @@ gui.add_imgui(function()
                 itemsCollected = {}
                 skipItemSend = true
                 unlockedStages = {1, 6}
+                teleFrags = 0
             end
         end
         ImGui.End()
@@ -327,6 +336,14 @@ gui.add_imgui(function()
         pickupStepOverride = ImGui.InputInt("Pickup Step", pickupStepOverride)
         warpToMostChecks = ImGui.Checkbox("Always pick stage with most checks remaining", warpToMostChecks)
         maxEquip = ImGui.InputInt("Maximum Equipment on Run Start", maxEquip)
+        deathLink = ImGui.Checkbox("Deathlink", deathLink)
+        ringLink = ImGui.Checkbox("Ring Link", ringLink) 
+        hardRingLink = ImGui.Checkbox("Hard Ring Link", hardRingLink) 
+        if connected then
+            if ImGui.Button("Update Tags") then
+                ap:ConnectUpdate(nil, getApTags())
+            end
+        end
 
         ImGui.End()
     end
@@ -334,31 +351,101 @@ end)
 
 -- Game Loop
 gm.pre_script_hook(gm.constants.__input_system_tick, function()
-    if ap then
-        ap:poll()
+    if not ap then return end
+    ap:poll()
 
-        player = getPlayer()
-        if next(itemsBuffer) ~= nil and player ~= nil then
-            local item = table.remove(itemsBuffer)
-            log.info("Sending: " .. item.item)
-            if item.item ~= 250006 then
-                giveItem(item, player)
-                if skipItemCollectedAdd then
-                    skipItemCollectedAdd = false
-                else
-                    table.insert(itemsCollected, item)
-                end
+    player = getPlayer()
+    if next(itemsBuffer) ~= nil and player ~= nil then
+        local item = table.remove(itemsBuffer)
+        log.info("Sending: " .. item.item)
+        if item.item ~= 250006 then
+            giveItem(item, player)
+            if skipItemCollectedAdd then
+                skipItemCollectedAdd = false
             else
-                teleFrags = teleFrags + 1
-                -- table.insert(itemQueue, "Teleporter Fragment")
+                table.insert(itemsCollected, item)
+            end
+        else
+            teleFrags = teleFrags + 1
+            -- table.insert(itemQueue, "Teleporter Fragment")
+        end
+    end
+
+    if expBuffer > 0 and player ~= nil then
+        local director = gm._mod_game_getDirector()
+        director.player_exp = expBuffer
+        expBuffer = expBuffer - director.player_exp_required
+    end
+
+    -- Ignore bounce if run isn't started
+    if not runStarted and bounceMsg ~= nil then
+        bounceMsg = nil
+    end
+end)
+
+-- onPlayerDeath
+Callback.add("onPlayerDeath", "AP_deathCheck", function(player)
+    if not deathLink then return end
+
+    if deathLinkRec then 
+        deathLinkRec = false 
+        return
+    end
+
+    ap:bounce({
+        time = os.time(),
+        cause = slot .. deathMessages[math.random(#deathMessages)],
+        source = instanceID,
+    }, nil, nil, {"DeathLink"})
+)
+
+-- onPlayerStep
+Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
+    if not ap then return end
+
+    -- RingLink
+    if ringLink then
+        local teleInst = Instance.find(Instance.teleporters)
+
+        local director = gm._mod_game_getDirector()
+        local ohud = gm._mod_game_getHUD()
+        local curGoldAmt = ohud.gold
+        local goldDiff = 0
+        local tag = "RingLink"
+
+        if lastGoldAmt == 0 then
+            lastGoldAmt = curGoldAmt
+        else
+            goldDiff = curGoldAmt - lastGoldAmt
+            -- print("lastGoldAmt: " .. lastGoldAmt .. " curGoldAmt " .. curGoldAmt .. " goldDiff " .. goldDiff)
+            lastGoldRem = goldDiff / 10 % 1
+            lastGoldAmt = curGoldAmt
+        end
+
+        if teleInst:exists() and teleInst.active >= 7 then
+            tag = "HardRingLink"
+        end
+
+        if goldDiff ~= 0 then
+            ap:Bounce({
+                time = os.time(),
+                source = instanceID,
+                amount = math.ceil(goldDiff / Difficulty.getScaling(cost))
+            }, nil, nil, {tag})
+        end
+    end
+
+    -- DeathLink
+    if bounceMsg then
+        local tag = bounceMsg["tags"]
+        if tag ~= nil then
+            if arrayContains(bounceMsg["tags"], "DeathLink") then
+                handleDeathLink(bounceMsg, player)
+            elseif arrayContains(bounceMsg["tags"], "RingLink") or arrayContains(bounceMsg["tags"], "HardRingLink") then
+                handleRingLink(bounceMsg, player)
             end
         end
-
-        if expBuffer > 0 and player ~= nil then
-            local director = gm._mod_game_getDirector()
-            director.player_exp = expBuffer
-            expBuffer = expBuffer - director.player_exp_required
-        end
+        bounceMsg = nil
     end
 end)
 
@@ -375,9 +462,8 @@ Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
                 equipCount = equipCount + 1
             end
 
-            if item.item ~= 250005 and equipCount < maxEquip then
-                giveItem(item, player)
-            end
+            giveItem(item, player)
+
         end
     end
 end)
@@ -430,7 +516,7 @@ end)
 
 -- Epic Teleporter Logic
 gm.post_script_hook(gm.constants.stage_should_spawn_epic_teleporter, function(self, other, result, args)
-    if not ap then return end
+    if not ap and not slotData.grouping == 0 then return end
 
     result.value = canEnterFinalStage()
 end)
@@ -442,6 +528,7 @@ gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, 
         log.info(teleInst.active)
     end
 
+    -- Why did I have this check for tele active state?  Was this some old carry over I don't need anymore??
     if not connected or slotData.grouping == 0 or teleInst.active == 7 then return end
     local nextStage = nil
     
@@ -565,9 +652,8 @@ function giveItem(item, player)
     -- Fillers
     elseif item.item == 250101 then -- Money
         local director = gm._mod_game_getDirector()
-        gm.item_drop_object(gm.constants.oEfGold, player.x, player.y, 0, false)
-        local goldObj = gm.instance_find(gm.constants.oEfGold, 0)
-        goldObj.value = 100 * director.enemy_buff
+        local ohud = gm._mod_game_getHUD()
+        ohud.gold = ohud.gold + (100 * director.enemy_buff)
     elseif item.item == 250102 then -- Experience
         expBuffer = expBuffer + 1000
 
@@ -605,4 +691,55 @@ function getPlayer()
         end
     end
     return nil
+end
+
+-- DeathLink Handler
+function handleDeathLink(msg, player)
+    local cause = msg["data"]["cause"]
+    local source = msg["data"]["source"]
+
+    if source ~= instanceID and deathLink then
+        deathLinkRec = true
+        player:kill()
+        if cause == nil then
+            local death = source .. " died"
+            -- table.insert(messageQueue, death)
+        else
+            -- table.insert(sendMsgQueue, cause)
+        end
+    end
+end
+
+
+-- RingLink Handler
+function handleRingLink(msg)
+    local amount = msg["data"]["amount"]
+    local source = msg["data"]["source"]
+    if debug then print(source .. " sending " .. amount .. " gold to " .. slot) end
+
+    if source ~= instanceID and ringLink then
+        local director = gm._mod_game_getDirector()
+        local ohud = gm._mod_game_getHUD()
+        newGoldAmt = math.max(ohud.gold + (amount * director.enemy_buff), 0)
+        if debug then print(newGoldAmt) end
+        lastGoldAmt = newGoldAmt
+        ohud.gold = newGoldAmt
+    end
+end
+
+function getApTags()
+    local tags = { "Lua-APClientPP" }
+
+        if deathLink == true then
+            table.insert(tags, "DeathLink")
+        end
+
+        if ringLink then
+            table.insert(tags, "RingLink")
+        end
+
+        if hardRingLink then
+            table.insert(tags, "HardRingLink")
+        end
+    end
 end
