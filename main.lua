@@ -97,6 +97,7 @@ function connect(server, slot, password)
         if data.grouping == 0 then
             locationsMissing = ap.missing_locations
         elseif data.grouping == 2 then
+            resetMapArray()
             for _, loc in ipairs(ap.missing_locations) do
                 name = ap:get_location_name(loc, ap:get_game())
                 map = string.match(name, "(.*):"):gsub("%s", ""):gsub("^%u", string.lower)
@@ -741,5 +742,11 @@ function getApTags()
         if hardRingLink then
             table.insert(tags, "HardRingLink")
         end
+    end
+end
+
+function resetMapArray()
+    for _, i in mapGroup do
+        i = {}
     end
 end
