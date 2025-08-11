@@ -44,7 +44,6 @@ local curPlayerSlot = nil
 local pickupStepOverride = -1
 local deathLink = false
 local ringLink = false
-local hardRingLink = false
 local lastRingTime = 0
 local warpToMostChecks = false
 local teleFrags = 0
@@ -333,7 +332,6 @@ gui.add_imgui(function()
         maxEquip = ImGui.InputInt("Maximum Equipment on Run Start", maxEquip)
         deathLink = ImGui.Checkbox("Deathlink", deathLink)
         ringLink = ImGui.Checkbox("Ring Link", ringLink) 
-        hardRingLink = ImGui.Checkbox("Hard Ring Link", hardRingLink) 
         if connected then
             if ImGui.Button("Update Tags") then
                 ap:ConnectUpdate(nil, getApTags())
@@ -379,14 +377,16 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
 end)
 
 -- onPlayerDeath
-Callback.add("onPlayerDeath", "AP_deathCheck", function(player)
+Callback.add("onDeath", "AP_deathCheck", function(actor, oob)
     if not deathLink then return end
+    if actor.object_index != gm.constants.oP then return end
 
     if deathLinkRec then 
         deathLinkRec = false 
         return
     end
 
+    if debug then log.info("Sending DeathLink") end
     ap:bounce({
         time = os.time(),
         cause = slot .. deathMessages[math.random(#deathMessages)],
@@ -406,7 +406,6 @@ Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
         local ohud = gm._mod_game_getHUD()
         local curGoldAmt = ohud.gold
         local goldDiff = 0
-        local tag = "RingLink"
 
         if lastGoldAmt == 0 then
             lastGoldAmt = curGoldAmt
@@ -416,17 +415,13 @@ Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
             lastGoldAmt = curGoldAmt
         end
 
-        if teleInst:exists() and teleInst.active >= 7 then
-            tag = "HardRingLink"
-        end
-
-        if goldDiff ~= 0 and (tag ~= "HardRingLink" or hardRingLink) then
+        if goldDiff ~= 0 then
             log.info(goldDiff .. " " .. tag)
             ap:Bounce({
                 time = os.time(),
                 source = instanceID,
                 amount = math.ceil(goldDiff / director.enemy_buff)
-            }, nil, nil, {tag})
+            }, nil, nil, {"RingLink"})
         end
     end
 
@@ -443,7 +438,7 @@ Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
         if tag ~= nil then
             if arrayContains(tag, "DeathLink") then
                 handleDeathLink(bounceMsg, player)
-            elseif arrayContains(tag, "RingLink") or arrayContains(tag, "HardRingLink") then
+            elseif arrayContains(tag, "RingLink") then
                 handleRingLink(bounceMsg, player)
             end
         end
@@ -519,7 +514,7 @@ end)
 
 -- Epic Teleporter Logic
 gm.post_script_hook(gm.constants.stage_should_spawn_epic_teleporter, function(self, other, result, args)
-    if not ap and not slotData.grouping == 0 then return end
+    if not connected and not slotData.grouping == 0 then return end
 
     result.value = canEnterFinalStage()
 end)
@@ -666,7 +661,11 @@ function giveItem(item, player)
     elseif item.item == 250202 and runStarted then -- Combat
         
     elseif item.item == 250203 and runStarted then -- Meteor
-        
+        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
+        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
+        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
+        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
+        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
     end
 
     if rarity ~= nil then
@@ -739,10 +738,6 @@ function getApTags()
 
     if ringLink then
         table.insert(tags, "RingLink")
-    end
-
-    if hardRingLink then
-        table.insert(tags, "HardRingLink")
     end
 
     return tags
