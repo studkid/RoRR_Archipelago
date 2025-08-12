@@ -44,6 +44,7 @@ local curPlayerSlot = nil
 local pickupStepOverride = -1
 local deathLink = false
 local ringLink = false
+local trapLink = false
 local lastRingTime = 0
 local warpToMostChecks = false
 local teleFrags = 0
@@ -86,7 +87,7 @@ function connect(server, slot, password)
 
     function on_room_info()
         log.info("Room info")
-        ap:ConnectSlot(slot, password, items_handling, {"Lua-APClientPP"}, {0, 5, 0})
+        ap:ConnectSlot(slot, password, items_handling, {}, {0, 5, 0})
     end
 
     function on_slot_connected(data)
@@ -332,6 +333,7 @@ gui.add_imgui(function()
         maxEquip = ImGui.InputInt("Maximum Equipment on Run Start", maxEquip)
         deathLink = ImGui.Checkbox("Deathlink", deathLink)
         ringLink = ImGui.Checkbox("Ring Link", ringLink) 
+        trapLink = ImGui.Checkbox("Trap Link", trapLink) 
         if connected then
             if ImGui.Button("Update Tags") then
                 ap:ConnectUpdate(nil, getApTags())
@@ -379,7 +381,7 @@ end)
 -- onPlayerDeath
 Callback.add("onDeath", "AP_deathCheck", function(actor, oob)
     if not deathLink then return end
-    if actor.object_index != gm.constants.oP then return end
+    if actor.object_index ~= gm.constants.oP then return end
 
     if deathLinkRec then 
         deathLinkRec = false 
@@ -387,7 +389,7 @@ Callback.add("onDeath", "AP_deathCheck", function(actor, oob)
     end
 
     if debug then log.info("Sending DeathLink") end
-    ap:bounce({
+    ap:Bounce({
         time = os.time(),
         cause = slot .. deathMessages[math.random(#deathMessages)],
         source = instanceID,
@@ -416,7 +418,7 @@ Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
         end
 
         if goldDiff ~= 0 then
-            log.info(goldDiff .. " " .. tag)
+            -- log.info(goldDiff .. " " .. tag)
             ap:Bounce({
                 time = os.time(),
                 source = instanceID,
@@ -439,7 +441,9 @@ Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
             if arrayContains(tag, "DeathLink") then
                 handleDeathLink(bounceMsg, player)
             elseif arrayContains(tag, "RingLink") then
-                handleRingLink(bounceMsg, player)
+                handleRingLink(bounceMsg)
+            elseif arrayContains(tag, "TrapLink") then
+                handleTrapLink(bounceMsg, player)
             end
         end
         bounceMsg = nil
@@ -661,11 +665,7 @@ function giveItem(item, player)
     elseif item.item == 250202 and runStarted then -- Combat
         
     elseif item.item == 250203 and runStarted then -- Meteor
-        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
-        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
-        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
-        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
-        gm.item_use_equipment(Equipment.find("ror", "glowingMeteorite"))
+        sendTrap("Meteor Trap", player)
     end
 
     if rarity ~= nil then
@@ -729,8 +729,36 @@ function handleRingLink(msg)
     end
 end
 
+function handleTrapLink(msg, player)
+    local name = msg["data"]["trap_name"]
+    local source = msg["data"]["source"]
+    if debug then log.info(source .. " recieving " .. name) end
+
+    if source ~= instanceId and trapLink then
+        sendTrap("Meteor Trap", player)
+    end
+end
+
+function sendTrap(trapName, player)
+    if trapName == "Meteor Trap" then
+        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+    end
+
+    if TrapLink then
+        ap:Bounce({
+            time = os.time(),
+            source = slot,
+            trap_name = trapName
+        }, nil, nil, {"TrapLink"})
+    end
+end
+
 function getApTags()
-    local tags = { "Lua-APClientPP" }
+    local tags = {  }
 
     if deathLink == true then
         table.insert(tags, "DeathLink")
@@ -738,6 +766,10 @@ function getApTags()
 
     if ringLink then
         table.insert(tags, "RingLink")
+    end
+
+    if trapLink then
+        table.insert(tags, "TrapLink")
     end
 
     return tags
