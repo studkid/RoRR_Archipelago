@@ -1,5 +1,6 @@
 # Archipelago for Risk of Rain Returns
 This mod adds support for Risk of Rain Returns for Archipelago.  
+This mod does nothing on it's own and a full detailed setup guide can be found [here](https://github.com/studkid/Archipelago/blob/main/worlds/ror1/docs/setup_RoRR_en.md)
 
 # How does this work
 This is written assuming a basic understanding of how Archipelago works; you can find more information on it at their site at https://archipelago.gg/.
