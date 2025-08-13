@@ -64,7 +64,7 @@ local playerInst = nil
 local gameStarted = false
 local deathLinkRec = false
 local equipLinkRec = false
-local lastGoldAmt = 0
+local lastGoldAmt = 0 
 
 --------------------------------------------------
 -- AP Client                                    --
@@ -684,7 +684,7 @@ function giveItem(item, player)
 
     -- Traps
     elseif item.item == 250201 then -- Time Warp
-        
+        sendTrap("Timer Trap", player, false)
     elseif item.item == 250202 and runStarted then -- Combat
         
     elseif item.item == 250203 and runStarted then -- Meteor
@@ -766,7 +766,13 @@ function handleTrapLink(msg, player)
 end
 
 function sendTrap(trapName, player, linked)
-    if trapName == "Meteor Trap" then
+    if trapName == "Timer Trap" or trapName == "Fast Trap" then
+        local director = gm._mod_game_getDirector()
+        local difficulty = Difficulty.wrap(gm._mod_game_getDifficulty())
+        local ohud = gm._mod_game_getHUD()
+        ohud.minute = ohud.minute + 1
+        director.enemy_buff = director.enemy_buff + difficulty.diff_scale
+    elseif trapName == "Meteor Trap" then
         equipLinkRec = true
         player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
         equipLinkRec = true
