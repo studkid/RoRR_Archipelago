@@ -45,6 +45,7 @@ local pickupStepOverride = -1
 local deathLink = false
 local ringLink = false
 local trapLink = false
+local equipLink = false
 local lastRingTime = 0
 local warpToMostChecks = false
 local teleFrags = 0
@@ -334,6 +335,7 @@ gui.add_imgui(function()
         deathLink = ImGui.Checkbox("Deathlink", deathLink)
         ringLink = ImGui.Checkbox("Ring Link", ringLink) 
         trapLink = ImGui.Checkbox("Trap Link", trapLink) 
+        equipLink = ImGui.Checkbox("Equipment Link", equipLink) 
         if connected then
             if ImGui.Button("Update Tags") then
                 ap:ConnectUpdate(nil, getApTags())
@@ -430,20 +432,23 @@ Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
     -- Bounce Handler
     if bounceMsg then
         local tag = bounceMsg["tags"]
-        if debug then 
-            log.info("data = {")
-            for index, data in ipairs(bounceMsg["data"]) do
-                log.info(index .. " = " .. data)
-            end
-            log.info("  }") 
-        end
         if tag ~= nil then
+            if debug then 
+                log.info("data = {")
+                for index, data in pairs(bounceMsg["data"]) do
+                    log.info("  " .. index .. " = " .. tostring(data))
+                end
+                log.info("}") 
+                log.info("tags = [\"" .. table.concat(tag, "\", \"") .. "\"]")
+            end
             if arrayContains(tag, "DeathLink") then
                 handleDeathLink(bounceMsg, player)
             elseif arrayContains(tag, "RingLink") then
                 handleRingLink(bounceMsg)
             elseif arrayContains(tag, "TrapLink") then
                 handleTrapLink(bounceMsg, player)
+            elseif arrayContains(tag, "EquipLink") then
+                handleEquipLink(bounceMsg, player)
             end
         end
         bounceMsg = nil
@@ -477,6 +482,19 @@ end)
 
 Callback.add("onGameEnd", "AP_onGameEnd", function()
     gameStarted = false
+end)
+
+-- Equipment Link
+Callback.add("onEquipmentUse", "AP_EquipLink", function(player, equipment, embryo, direction)
+    if not TrapLink and not ap then return end
+
+    ap:Bounce({
+        time = os.time(),
+        source = instanceID,
+        namespace = equipment.namespace,
+        identifier = equipment.identifier,
+        double = embryo
+    }, nil, nil, {"EquipLink"})
 end)
 
 -- Location Checks
@@ -634,8 +652,7 @@ function giveItem(item, player)
         rarity = 0
     elseif item.item == 250002 then -- Uncommon Item
         rarity = 1
-    elseif item.item == 250003 then -- Rare Item
-        rarity = 2
+    elseif item.item == 250003 then -- Rare Itemsource
     elseif item.item == 250004 then -- Boss Item
         rarity = 4
     elseif item.item == 250005 then -- Equipment
@@ -705,8 +722,10 @@ function handleDeathLink(msg, player)
         player:kill()
         if cause == nil then
             local death = source .. " died"
+            log.info(death)
             -- table.insert(messageQueue, death)
         else
+            log.info(cause)
             -- table.insert(sendMsgQueue, cause)
         end
     end
@@ -729,6 +748,7 @@ function handleRingLink(msg)
     end
 end
 
+-- TrapLink Handler
 function handleTrapLink(msg, player)
     local name = msg["data"]["trap_name"]
     local source = msg["data"]["source"]
@@ -757,6 +777,27 @@ function sendTrap(trapName, player)
     end
 end
 
+-- EquipLink Handler
+function handleEquipLink(msg, player)
+    local name = msg["data"]["trap_name"]
+    local source = msg["data"]["source"]
+    local namespace = msg["data"]["namespace"]
+    local identifier = msg["data"]["identifier"]
+    local double = msg["data"]["double"]
+    log.info("EquipLink Sending " .. identifier)
+
+    if EquipLink then
+        equipment = Equipment.find(namespace, identifier).value
+        direction, bool = player:get_equipment_use_direction()
+        if equipment ~= nil then
+            player:item_use_equipment(true, equipment, true, direction, double)
+        else
+            log.info("EquipLink item not found: " .. identifier .. " from " .. namespace)
+            log.info("If you're seeing this for a vanilla item, this is likely an error.  If this is a modded item let me know and I'll add it to the mapping!")
+        end
+    end
+end
+
 function getApTags()
     local tags = {  }
 
@@ -770,6 +811,10 @@ function getApTags()
 
     if trapLink then
         table.insert(tags, "TrapLink")
+    end
+
+    if equipLink then
+        table.insert(tags, "EquipLink")
     end
 
     return tags
