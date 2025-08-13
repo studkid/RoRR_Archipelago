@@ -63,6 +63,7 @@ local curMap = nil
 local playerInst = nil
 local gameStarted = false
 local deathLinkRec = false
+local equipLinkRec = false
 local lastGoldAmt = 0
 
 --------------------------------------------------
@@ -488,6 +489,11 @@ end)
 Callback.add("onEquipmentUse", "AP_EquipLink", function(player, equipment, embryo, direction)
     if not TrapLink and not ap then return end
 
+    if equipLinkRec then
+        equipLinkRec = false
+        return
+    end
+
     ap:Bounce({
         time = os.time(),
         source = instanceID,
@@ -761,10 +767,15 @@ end
 
 function sendTrap(trapName, player)
     if trapName == "Meteor Trap" then
+        equipLinkRec = true
         player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        equipLinkRec = true
         player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        equipLinkRec = true
         player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        equipLinkRec = true
         player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        equipLinkRec = true
         player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
     end
 
@@ -784,13 +795,14 @@ function handleEquipLink(msg, player)
     local namespace = msg["data"]["namespace"]
     local identifier = msg["data"]["identifier"]
     local double = msg["data"]["double"]
-    log.info("EquipLink Sending " .. identifier)
 
-    if EquipLink then
+    if source ~= instanceID and equipLink then
+        log.info("EquipLink Sending " .. identifier)
         equipment = Equipment.find(namespace, identifier).value
         direction, bool = player:get_equipment_use_direction()
         if equipment ~= nil then
-            player:item_use_equipment(true, equipment, true, direction, double)
+            equipLinkRec = true
+            player:item_use_equipment(true, equipment, true, direction)
         else
             log.info("EquipLink item not found: " .. identifier .. " from " .. namespace)
             log.info("If you're seeing this for a vanilla item, this is likely an error.  If this is a modded item let me know and I'll add it to the mapping!")
