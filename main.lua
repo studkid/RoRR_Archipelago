@@ -688,7 +688,7 @@ function giveItem(item, player)
     elseif item.item == 250202 and runStarted then -- Combat
         
     elseif item.item == 250203 and runStarted then -- Meteor
-        sendTrap("Meteor Trap", player)
+        sendTrap("Meteor Trap", player, false)
     end
 
     if rarity ~= nil then
@@ -758,14 +758,14 @@ end
 function handleTrapLink(msg, player)
     local name = msg["data"]["trap_name"]
     local source = msg["data"]["source"]
-    if debug then log.info(source .. " recieving " .. name) end
 
-    if source ~= instanceId and trapLink then
-        sendTrap("Meteor Trap", player)
+    if source ~= slot and trapLink then
+        if debug then log.info(source .. " recieving " .. name) end
+        sendTrap("Meteor Trap", player, true)
     end
 end
 
-function sendTrap(trapName, player)
+function sendTrap(trapName, player, linked)
     if trapName == "Meteor Trap" then
         equipLinkRec = true
         player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
@@ -779,7 +779,7 @@ function sendTrap(trapName, player)
         player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
     end
 
-    if TrapLink then
+    if trapLink and not linked then
         ap:Bounce({
             time = os.time(),
             source = slot,
