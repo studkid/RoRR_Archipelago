@@ -395,7 +395,7 @@ Callback.add("onDeath", "AP_deathCheck", function(actor, oob)
     ap:Bounce({
         time = os.time(),
         cause = slot .. deathMessages[math.random(#deathMessages)],
-        source = instanceID,
+        source = slot,
     }, nil, nil, {"DeathLink"})
 end)
 
@@ -723,7 +723,7 @@ function handleDeathLink(msg, player)
     local cause = msg["data"]["cause"]
     local source = msg["data"]["source"]
 
-    if source ~= instanceID and deathLink then
+    if source ~= slot and deathLink then
         deathLinkRec = true
         player:kill()
         if cause == nil then
