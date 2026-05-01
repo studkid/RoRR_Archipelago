@@ -1,6 +1,7 @@
 require("staticvars")
 local AP = require("./lua-apclientpp")
-mods["RoRRModdingToolkit-RoRR_Modding_Toolkit"].auto()
+mods["ReturnsAPI-ReturnsAPI"].auto()
+log.info(AP)
 
 -- Connection Info
 local connected = false
@@ -382,7 +383,7 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
 end)
 
 -- onPlayerDeath
-Callback.add("onDeath", "AP_deathCheck", function(actor, oob)
+Callback.add(Callback.ON_DEATH, function(actor, oob)
     if not deathLink then return end
     if actor.object_index ~= gm.constants.oP then return end
 
@@ -400,7 +401,7 @@ Callback.add("onDeath", "AP_deathCheck", function(actor, oob)
 end)
 
 -- onPlayerStep
-Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
+Callback.add(Callback.ON_PLAYER_STEP, function(player)
     if not ap then return end
 
     -- RingLink
@@ -457,7 +458,7 @@ Callback.add("onPlayerStep", "AP_onPlayerStep", function(player)
 end)
 
 -- New Run Check 
-Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
+Callback.add(Callback.ON_PLAYER_INIT, function(player)
     runStarted = true
     playerInst = player
     if ap then
@@ -476,17 +477,17 @@ Callback.add("onPlayerInit", "AP_newRunCheck", function(player)
     end
 end)
 
-Callback.add("onGameStart", "AP_onGameStart", function()
+Callback.add(Callback.ON_GAME_START, function()
     stageProg = 0
     gameStarted = true
 end)
 
-Callback.add("onGameEnd", "AP_onGameEnd", function()
+Callback.add(Callback.ON_GAME_END, function()
     gameStarted = false
 end)
 
 -- Equipment Link
-Callback.add("onEquipmentUse", "AP_EquipLink", function(player, equipment, embryo, direction)
+Callback.add(Callback.ON_EQUIPMENT_USE, function(player, equipment, embryo, direction)
     if not TrapLink and not ap then return end
 
     if equipLinkRec then

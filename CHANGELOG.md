@@ -1,3 +1,7 @@
+# v0.2.1
+## Changes
+- Updated mod to work with ReturnsAPI
+
 # v0.2
 ## New Changes
 - Added DeathLink
