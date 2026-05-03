@@ -1,3 +1,7 @@
+# v0.2.2 (Hotfix)
+## Bug Fixes
+- (Hopefully) Finished migrating everything else I forgot to RAPI
+
 # v0.2.1
 ## Changes
 - Updated mod to work with ReturnsAPI
