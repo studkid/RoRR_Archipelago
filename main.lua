@@ -355,7 +355,7 @@ gm.pre_script_hook(gm.constants.__input_system_tick, function()
     if not ap then return end
     ap:poll()
 
-    player = getPlayer()
+    local player = getPlayer()
     if next(itemsBuffer) ~= nil and player ~= nil then
         local item = table.remove(itemsBuffer)
         log.info("Sending: " .. item.item)
@@ -781,15 +781,15 @@ function sendTrap(trapName, player, linked)
         director.enemy_buff = director.enemy_buff + difficulty.diff_scale
     elseif trapName == "Meteor Trap" then
         equipLinkRec = true
-        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        player:item_use_equipment(true, Equipment.find("glowingMeteorite", "ror").value, true)
         equipLinkRec = true
-        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        player:item_use_equipment(true, Equipment.find("glowingMeteorite", "ror").value, true)
         equipLinkRec = true
-        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        player:item_use_equipment(true, Equipment.find("glowingMeteorite", "ror").value, true)
         equipLinkRec = true
-        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        player:item_use_equipment(true, Equipment.find("glowingMeteorite", "ror").value, true)
         equipLinkRec = true
-        player:item_use_equipment(true, Equipment.find("ror", "glowingMeteorite").value, true)
+        player:item_use_equipment(true, Equipment.find("glowingMeteorite", "ror").value, true)
     end
 
     if trapLink and not linked then
@@ -811,7 +811,7 @@ function handleEquipLink(msg, player)
 
     if source ~= instanceID and equipLink then
         log.info("EquipLink Sending " .. identifier)
-        equipment = Equipment.find(namespace, identifier).value
+        equipment = Equipment.find(identifier, namespace).value
         direction, bool = player:get_equipment_use_direction()
         if equipment ~= nil then
             equipLinkRec = true
