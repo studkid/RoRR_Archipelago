@@ -665,7 +665,8 @@ function giveItem(item, player)
         rarity = 0
     elseif item.item == 250002 then -- Uncommon Item
         rarity = 1
-    elseif item.item == 250003 then -- Rare Itemsource
+    elseif item.item == 250003 then -- Rare Item
+        rarity = 2
     elseif item.item == 250004 then -- Boss Item
         rarity = 4
     elseif item.item == 250005 then -- Equipment
