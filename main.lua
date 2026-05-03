@@ -618,7 +618,7 @@ end)
 -- Game Win Check
 gm.post_script_hook(gm.constants.ending_find, function(self, other, result, args)
     log.info(args[1].value)
-    if ap and args[1].value == "ror-won" then
+    if ap and args[1].value == "ror-won" and gameStarted then
         ap:StatusUpdate(30)
     end
 end)
