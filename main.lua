@@ -408,8 +408,6 @@ Callback.add(Callback.ON_PLAYER_STEP, function(player)
 
     -- RingLink
     if ringLink then
-        local teleInst = Instance.find(Instance.teleporters)
-
         local director = gm._mod_game_getDirector()
         local ohud = gm._mod_game_getHUD()
         local curGoldAmt = ohud.gold
@@ -552,18 +550,19 @@ end)
 
 -- Stage Locking
 gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, args)
-    local teleInst = Instance.find(gm.constants.oTeleporter)
+    -- Debug code I think?
+    -- local teleInst = Instance.find(gm.constants.oTeleporter)
     
-    if teleInst ~= Instance.INVALID then
-        teleInst = Instance.find(gm.constants.oTeleportEpic)
-    end
+    -- if teleInst ~= Instance.INVALID then
+    --     teleInst = Instance.find(gm.constants.oTeleportEpic)
+    -- end
 
-    if teleInst ~= Instance.INVALID then
-        log.info(teleInst.active)
-    end
+    -- if teleInst ~= Instance.INVALID then
+    --     log.info(teleInst.active)
+    -- end
 
-    -- Why did I have this check for tele active state?  Was this some old carry over I don't need anymore??
-    if not connected or slotData.grouping == 0 or teleInst.active == 7 then return end
+    -- Used to check for tele activation == 7.  Not sure why I had this check investigate if it leads to future problems
+    if not connected or slotData.grouping == 0 then return end
     local nextStage = nil
     
     while nextStage == nil do 
