@@ -1,6 +1,8 @@
 require("staticvars")
 local AP = require("./lua-apclientpp")
-mods["ReturnsAPI-ReturnsAPI"].auto()
+mods["ReturnsAPI-ReturnsAPI"].auto{
+    namespace = "RoRR_Archipelago"
+}
 log.info(AP)
 
 -- Connection Info
@@ -509,7 +511,7 @@ gm.post_script_hook(gm.constants.item_give, function(self, other, result, args)
     if ap and canStep then
         local actor = args[1].value
         if actor.object_index == gm.constants.oP then
-            log.info(curMap)
+            log.info("item_give" .. curMap)
 
             if slotData.grouping == 0 and #locationsMissing ~= 0 then
                 locationsChecked = {}
@@ -550,8 +552,13 @@ end)
 
 -- Stage Locking
 gm.post_script_hook(gm.constants.stage_roll_next, function(self, other, result, args)
-    local teleInst = Instance.find(Instance.teleporters)
-    if teleInst:exists() then
+    local teleInst = Instance.find(gm.constants.oTeleporter)
+    
+    if teleInst ~= Instance.INVALID then
+        teleInst = Instance.find(gm.constants.oTeleportEpic)
+    end
+
+    if teleInst ~= Instance.INVALID then
         log.info(teleInst.active)
     end
 
