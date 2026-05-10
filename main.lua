@@ -297,7 +297,7 @@ gui.add_imgui(function()
         ImGui.Text("Teleporter Fragments: " .. teleFrags .. "/" .. slotData.requiredFrags)
 
         if slotData.grouping == 0 then
-            ImGui.Text(map .. " " .. #ap.missing_locations .. "/" .. slotData.totalLocations)
+            ImGui.Text("Total Locations: " .. #ap.missing_locations .. "/" .. slotData.totalLocations)
         else
             for i, stage in ipairs(mapOrder) do
                 if arrayContains(unlockedStages, i) then

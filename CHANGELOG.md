@@ -1,3 +1,7 @@
+# v0.2.3
+## Bug Fixes
+- Fixed tracker display not working on Universal item grouping
+
 # v0.2.2 (Hotfix)
 ## Bug Fixes
 - (Hopefully) Finished migrating everything else I forgot to RAPI
